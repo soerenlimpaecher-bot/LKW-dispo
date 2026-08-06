@@ -1,0 +1,33 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:Arial;background:#eef2f5;margin:0}header{background:#222;color:#fff;padding:12px}#top{padding:10px;background:#fff}.card,.order{background:#fff;border:1px solid #bbb;border-radius:8px;padding:10px;margin:8px}input,button{padding:8px}</style></head>
+<body><header>LKW Dispo V0.2</header><div id="top"><input id="orderName"><button onclick="addOrder()">+ Auftrag</button></div>
+<div class="order"><b>Aufträge</b><div id="orders"></div></div>
+<div class='card' onclick='moveTruck(0)'><b>LKW 01</b><br>👤 Fahrer 1<br>🚚 Schubboden<br><small id='a0'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(1)'><b>LKW 02</b><br>👤 Fahrer 2<br>🚚 Erdmulde<br><small id='a1'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(2)'><b>LKW 03</b><br>👤 Fahrer 3<br>🚚 Getreidekipper<br><small id='a2'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(3)'><b>LKW 04</b><br>👤 Fahrer 4<br>🚚 Platte<br><small id='a3'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(4)'><b>LKW 05</b><br>👤 Fahrer 5<br>🚚 Schubboden<br><small id='a4'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(5)'><b>LKW 06</b><br>👤 Fahrer 6<br>🚚 Erdmulde<br><small id='a5'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(6)'><b>LKW 07</b><br>👤 Fahrer 7<br>🚚 Getreidekipper<br><small id='a6'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(7)'><b>LKW 08</b><br>👤 Fahrer 8<br>🚚 Platte<br><small id='a7'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(8)'><b>LKW 09</b><br>👤 Fahrer 9<br>🚚 Schubboden<br><small id='a8'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(9)'><b>LKW 10</b><br>👤 Fahrer 10<br>🚚 Erdmulde<br><small id='a9'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(10)'><b>LKW 11</b><br>👤 Fahrer 11<br>🚚 Getreidekipper<br><small id='a10'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(11)'><b>LKW 12</b><br>👤 Fahrer 12<br>🚚 Platte<br><small id='a11'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(12)'><b>LKW 13</b><br>👤 Fahrer 13<br>🚚 Schubboden<br><small id='a12'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(13)'><b>LKW 14</b><br>👤 Fahrer 14<br>🚚 Erdmulde<br><small id='a13'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(14)'><b>LKW 15</b><br>👤 Fahrer 15<br>🚚 Getreidekipper<br><small id='a14'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(15)'><b>LKW 16</b><br>👤 Fahrer 16<br>🚚 Platte<br><small id='a15'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(16)'><b>LKW 17</b><br>👤 Fahrer 17<br>🚚 Schubboden<br><small id='a16'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(17)'><b>LKW 18</b><br>👤 Fahrer 18<br>🚚 Erdmulde<br><small id='a17'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(18)'><b>LKW 19</b><br>👤 Fahrer 19<br>🚚 Getreidekipper<br><small id='a18'>Noch frei</small></div>
+<div class='card' onclick='moveTruck(19)'><b>LKW 20</b><br>👤 Fahrer 20<br>🚚 Platte<br><small id='a19'>Noch frei</small></div>
+
+<script>
+let orders=["Noch frei"];
+function renderOrders(){let o=document.getElementById('orders');o.innerHTML='';orders.forEach(x=>{let d=document.createElement('div');d.className='order';d.innerText=x;o.appendChild(d);});}
+function addOrder(){let n=document.getElementById('orderName').value.trim();if(!n)return;orders.push(n);renderOrders();save();}
+function moveTruck(i){let t='Wohin?\n';orders.forEach((o,n)=>t+=n+': '+o+'\n');let r=prompt(t,'0');if(r==null)return;r=parseInt(r);if(isNaN(r)||r<0||r>=orders.length)return;document.getElementById('a'+i).innerText=orders[r];save();}
+function save(){localStorage.setItem('orders',JSON.stringify(orders));for(let i=0;i<20;i++){localStorage.setItem('truck'+i,document.getElementById('a'+i).innerText);}}
+window.onload=function(){let s=localStorage.getItem('orders');if(s){orders=JSON.parse(s);}renderOrders();for(let i=0;i<20;i++){let v=localStorage.getItem('truck'+i);if(v)document.getElementById('a'+i).innerText=v;}}
+</script></body></html>
