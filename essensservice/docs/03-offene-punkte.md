@@ -1,31 +1,29 @@
 # Offene Punkte und fehlende Voraussetzungen
 
-## Technisch zu klären bzw. zu prüfen
+## Zugänge (werden für den Testbetrieb benötigt)
 
-1. **Angemeldete Fahrer**: Wie lässt sich die heutige Anwesenheit aus `/arbeitszeit` zuverlässig lesen?
-   (Ein Testlauf am Rechner im Büro ist nötig. Eine JSON-Schnittstelle dafür ist nicht dokumentiert.) Stempeln
-   alle Fahrer morgens überhaupt ein, oder ist der erste Auftrag das bessere Merkmal?
-2. **Planung für morgen**: Soll schon am Vortag bestellt werden? Dann bräuchten wir die Disposition
-   (`disposition.agrarmonitor.de`). Ein Datenabruf von dort ist bisher nicht erprobt, nur die Bedienung über die Oberfläche.
-3. **Ausführung des Abgleichs**: Läuft die Claude-App mit eingebautem Browser (oder Claude in Chrome) auf
-   einem Bürorechner, der morgens an und in Agrarmonitor angemeldet ist? Von der Cloud aus ist Agrarmonitor
-   nicht erreichbar.
-4. **Pivot-Feldnamen** einmal am echten Mandanten mit `Object.keys` bestätigen, insbesondere, ob es einen
-   Auftragsbeginn mit Uhrzeit gibt (wichtig für die Regel „zuletzt begonnener Auftrag“).
-5. **n8n-Tarif**: Wie viele Ausführungen gibt der Tarif her? (Jeder Seitenaufruf ist eine Ausführung.)
+1. **Supabase-Projekt** (Region EU, z. B. Frankfurt): Projekt-URL, `anon`-Key und `service_role`-Key.
+   In dieser Entwicklungsumgebung gibt es keinen Supabase-Zugang; entwickelt und getestet wird gegen ein lokales
+   PostgreSQL 16 mit nachgebildeten Supabase-Rollen.
+2. **Vercel-Projekt** mit Verbindung zum GitHub-Repository und den Umgebungsvariablen aus `.env.example`.
+3. **Domain** für die Links (z. B. `essen.agrarlohn-mueritz.de`), sonst die Vercel-Adresse.
+4. **VAPID-Schlüssel** für Web Push (lassen sich mit `npx web-push generate-vapid-keys` erzeugen) und eine
+   Kontaktadresse des Betriebs für `VAPID_SUBJECT`.
 
-## Fachlich festzulegen (kommt vermutlich mit dem Master-Prompt)
+## Fachlich festzulegen
 
-- Gruppenregel bestätigen (Gruppe = Projekt des Tages?) und wer Oberhaupt ist bzw. wer das festlegt.
-- Speiseplan: wer pflegt ihn, wie viele Gerichte, Allergene, vegetarisch, Portionsgrößen.
-- Bestellschluss (Uhrzeit), ob nach Bestellschluss noch geändert werden darf, Lieferung oder Abholung, Lieferorte.
-- Kosten: Wer zahlt, wird an Kunden weiterberechnet, gibt es einen Eigenanteil der Fahrer?
-- Wer in der Küche bedient die App, und auf welchem Gerät?
-- Datenschutz: Darf die Anwesenheit dafür genutzt werden? Wir speichern nur Name, Gruppe und Bestellung.
+- Löschfrist für Standortdaten und Protokolle (Vorschlag: Standorte nach 90 Tagen, Protokoll nach 1 Jahr).
+- Freitext-Hinweis zur Bestellung (z. B. Allergien) – vorgesehen, max. 500 Zeichen. Bestätigen, ob gewünscht.
+- Adresse ohne Kartenpunkt: wird als „Standort unvollständig“ geführt, bis das Büro den Punkt setzt. Eine automatische
+  Adresssuche (Geocoding) ist nicht eingebaut, weil dafür ein externer Dienst nötig wäre.
 
-## Bestätigung nötig
+## Abweichungen vom ersten Vorschlag (durch den Master-Prompt)
 
-- Gilt als „bestehende Betriebssteuerung“ alles, was ich als unantastbar eingestuft habe? Das sind `index.html`
-  (LKW Dispo), die n8n-Workflows AGRARLOHN CONNECT* und JARVIS* mit ihren Tabellen sowie die Agrarmonitor-Skills.
-- Speicherort: Ordner `essensservice/` in diesem Repository (Branch `claude/agrarlohn-essensservice-0w34kw`)
-  oder später ein eigenes Repository `agrarlohn-essensservice`.
+- Kein Gruppenoberhaupt und kein gemeinsamer WhatsApp-Link mehr, stattdessen persönliche Links je Fahrer.
+- Keine Agrarmonitor- und keine n8n-Anbindung in Version 1.
+
+## Technische Hinweise
+
+- iPhones erhalten Web Push nur, wenn die Seite als App zum Home-Bildschirm hinzugefügt wurde (ab iOS 16.4).
+- Push-Wiederholungen laufen über `/api/cron/push` (Vercel Cron, abgesichert mit `CRON_SECRET`) und über einen
+  Knopf im Büro-Dashboard.

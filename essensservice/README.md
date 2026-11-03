@@ -1,31 +1,31 @@
 # Agrarlohn Essensservice
 
-Eigenständiges Projekt für die Essensbestellung der Fahrer von Agrarlohn Müritz.
-Büro, Küche und Gruppenoberhäupter arbeiten in einer gemeinsamen Webanwendung.
-Das Oberhaupt einer Fahrergruppe bestellt das Essen für seine ganze Gruppe. Den Link dazu
-verteilen wir zunächst über WhatsApp.
+Essensbestell- und Auslieferungsplattform der Agrarlohn Müritz GmbH, umgesetzt nach dem Master-Prompt
+„Essensservice 1.0“. Rollen: Fahrer, Büro, Küche und Essenslieferfahrer.
 
-**Status:** Bestandsaufnahme und Planung. Es gibt noch keinen Programmcode. Die Umsetzung beginnt erst nach Freigabe.
+Der Ordner ist vollständig getrennt von der bestehenden Betriebssteuerung (`/index.html` „LKW Dispo“,
+n8n „AGRARLOHN CONNECT“/„JARVIS“, Agrarmonitor-Skills). Diese Systeme werden nicht verändert.
 
-## Abgrenzung
+## Stand
 
-- Dieser Ordner ist vollständig getrennt von der bestehenden Betriebssteuerung
-  (`/index.html` „LKW Dispo“, n8n „AGRARLOHN CONNECT“, „JARVIS“ und die Agrarmonitor-Skills).
-- Der Essensservice liest Agrarmonitor nur, er schreibt dort nie.
-- Er bekommt eigene n8n-Workflows, eigene Data Tables (`Essen-*`) und eigene Webhook-Pfade (`/webhook/essen/*`).
+| Phase | Inhalt | Stand |
+|---|---|---|
+| 1 | Bestandsaufnahme | erledigt – [docs/01-bestandsaufnahme.md](docs/01-bestandsaufnahme.md) |
+| 2 | Architektur, Datenmodell, Rechte | erledigt – [docs/02-architektur.md](docs/02-architektur.md), `supabase/migrations/` |
+| 3–7 | Oberflächen, Karte, Auslieferung, Push, Bereitstellung | in Arbeit |
 
-## Struktur
+Offene Punkte und fehlende Zugänge: [docs/03-offene-punkte.md](docs/03-offene-punkte.md)
 
-| Ordner | Inhalt |
-|---|---|
-| `docs/` | Bestandsaufnahme, Architektur, offene Punkte |
-| `app/` | Weboberfläche (Büro, Küche, Oberhaupt) – HTML/JS |
-| `n8n/` | Exportierte n8n-Workflows des Essensservice (Versionsstand) |
-| `agent/` | Lese-Skripte für den Agrarmonitor-Browser-Agenten |
-| `testdaten/` | Erfundene Testdaten, ausdrücklich als Test markiert |
+## Entwicklung
 
-## Dokumente
+```bash
+npm install
+cp .env.example .env.local      # Werte eintragen
+npm run db:test:reset           # lokale Test-Datenbank (PostgreSQL) anlegen
+npm test                        # automatisierte Tests
+npm run dev                     # http://localhost:3000
+```
 
-1. [Bestandsaufnahme](docs/01-bestandsaufnahme.md): was vorhanden ist und was davon nutzbar ist
-2. [Architektur und Agrarmonitor-Anbindung](docs/02-architektur.md)
-3. [Offene Punkte und Voraussetzungen](docs/03-offene-punkte.md)
+Die Tests laufen gegen ein lokales PostgreSQL mit nachgebildeten Supabase-Rollen
+(`supabase/tests/supabase_shim.sql`). Die feste Testuhr (`app.fake_now`) wirkt nur in Datenbanken,
+in denen `app.testmode = 'on'` gesetzt ist – also nie in Produktion.
