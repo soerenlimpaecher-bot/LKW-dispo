@@ -21,7 +21,11 @@ function urlBase64ToUint8Array(base64: string) {
 
 export async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return null;
-  return navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  // Eigene Seite merken, damit ein Tippen auf die Benachrichtigung genau hierher führt.
+  const sw = reg.active ?? (await navigator.serviceWorker.ready).active;
+  sw?.postMessage({ type: "home", url: window.location.pathname });
+  return reg;
 }
 
 /** Fragt die Erlaubnis ab und liefert das Abo (oder null, wenn abgelehnt / nicht konfiguriert). */

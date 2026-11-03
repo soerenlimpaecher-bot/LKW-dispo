@@ -24,15 +24,38 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Die persönliche Seite meldet ihre Adresse hierher. Sie bleibt nur auf diesem Gerät gespeichert
+// (der Server kennt das Token nicht im Klartext und kann es nicht in die Nachricht schreiben).
+const META = "essen-meta";
+self.addEventListener("message", (event) => {
+  const d = event.data || {};
+  if (d.type === "home" && typeof d.url === "string" && d.url.startsWith("/")) {
+    event.waitUntil(caches.open(META).then((c) => c.put("/__home", new Response(d.url))));
+  }
+});
+
+async function homeUrl() {
+  try {
+    const r = await (await caches.open(META)).match("/__home");
+    if (r) return await r.text();
+  } catch {}
+  return "/";
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+    (async () => {
+      const path = event.notification.data?.url && event.notification.data.url !== "/" ? event.notification.data.url : await homeUrl();
+      const url = new URL(path, self.location.origin).href;
+      const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const w of wins) {
-        if (w.url === url && "focus" in w) return w.focus();
+        if (w.url.startsWith(url) && "focus" in w) {
+          w.navigate?.(url);
+          return w.focus();
+        }
       }
       return self.clients.openWindow(url);
-    }),
+    })(),
   );
 });

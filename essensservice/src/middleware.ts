@@ -29,4 +29,4 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ["/buero/:path*", "/kueche/:path*", "/api/staff/:path*"] };
+export const config = { matcher: ["/buero/:path*", "/kueche/:path*", "/api/staff/:path*", "/api/push/:path*"] };
