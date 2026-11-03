@@ -1,29 +1,37 @@
 # Offene Punkte und fehlende Voraussetzungen
 
-## Zugänge (werden für den Testbetrieb benötigt)
+## Zugänge für die Testumgebung (von euch bereitzustellen)
 
-1. **Supabase-Projekt** (Region EU, z. B. Frankfurt): Projekt-URL, `anon`-Key und `service_role`-Key.
-   In dieser Entwicklungsumgebung gibt es keinen Supabase-Zugang; entwickelt und getestet wird gegen ein lokales
-   PostgreSQL 16 mit nachgebildeten Supabase-Rollen.
-2. **Vercel-Projekt** mit Verbindung zum GitHub-Repository und den Umgebungsvariablen aus `.env.example`.
-3. **Domain** für die Links (z. B. `essen.agrarlohn-mueritz.de`), sonst die Vercel-Adresse.
-4. **VAPID-Schlüssel** für Web Push (lassen sich mit `npx web-push generate-vapid-keys` erzeugen) und eine
-   Kontaktadresse des Betriebs für `VAPID_SUBJECT`.
+1. **Supabase-Projekt** (Region Frankfurt) – Project URL, anon key, service_role key.
+2. **Vercel-Projekt** mit Zugriff auf dieses GitHub-Repository (Root Directory `essensservice`).
+3. **Kontaktadresse** für Web Push (`VAPID_SUBJECT`) und optional eine **Domain** für die Links.
+4. **E-Mail-Adressen** der ersten Büro- und Küchenkonten.
 
-## Fachlich festzulegen
+In dieser Entwicklungsumgebung gab es keinen Supabase- oder Vercel-Zugang. Alles ist gegen ein lokales
+PostgreSQL 16 mit nachgebildeten Supabase-Rollen entwickelt und getestet. Ein Lauf gegen ein echtes Supabase-Projekt
+steht noch aus (Schritte in `04-bereitstellung.md`).
 
-- Löschfrist für Standortdaten und Protokolle (Vorschlag: Standorte nach 90 Tagen, Protokoll nach 1 Jahr).
-- Freitext-Hinweis zur Bestellung (z. B. Allergien) – vorgesehen, max. 500 Zeichen. Bestätigen, ob gewünscht.
-- Adresse ohne Kartenpunkt: wird als „Standort unvollständig“ geführt, bis das Büro den Punkt setzt. Eine automatische
+## Fachlich zu bestätigen
+
+- **Löschfristen** für Standortdaten und Protokolle (Vorschlag: Standorte nach 90 Tagen, Protokoll nach 1 Jahr).
+  Eine automatische Löschung ist noch nicht eingebaut.
+- **Hinweisfeld** zur Bestellung (max. 500 Zeichen, z. B. „ohne Soße“) – ist eingebaut, bitte bestätigen.
+- **Adresse ohne Kartenpunkt** gilt als „Standort unvollständig“, bis das Büro den Punkt setzt. Eine automatische
   Adresssuche (Geocoding) ist nicht eingebaut, weil dafür ein externer Dienst nötig wäre.
+- **Ablauf nach 9:00 Uhr**: Fahrer sehen dann automatisch das Gericht des Folgetags und können dafür bestellen,
+  sobald die Küche es eingetragen hat.
+- **Gruppen mit manuellen Zuordnungen** bleiben vollständig unangetastet (die Automatik fügt dort auch niemanden hinzu).
+- **Kartenkacheln**: OpenStreetMap-Standardkacheln sind für geringe Nutzung frei; bei starker Nutzung ist ein
+  Kachelanbieter nötig.
+
+## Bekannte Einschränkungen
+
+- iPhones erhalten Web Push nur aus der zum Home-Bildschirm hinzugefügten App (ab iOS 16.4).
+- Automatische Push-Wiederholungen per Cron brauchen Vercel Pro oder einen externen Zeitplaner; sonst Knopf im Büro.
+- „Drucken / PDF“ nutzt den Druckdialog des Browsers („Als PDF speichern“).
 
 ## Abweichungen vom ersten Vorschlag (durch den Master-Prompt)
 
-- Kein Gruppenoberhaupt und kein gemeinsamer WhatsApp-Link mehr, stattdessen persönliche Links je Fahrer.
+- Kein Gruppenoberhaupt und kein gemeinsamer WhatsApp-Link, sondern persönliche Links je Fahrer
+  (Weitergabe per WhatsApp-Knopf im Büro).
 - Keine Agrarmonitor- und keine n8n-Anbindung in Version 1.
-
-## Technische Hinweise
-
-- iPhones erhalten Web Push nur, wenn die Seite als App zum Home-Bildschirm hinzugefügt wurde (ab iOS 16.4).
-- Push-Wiederholungen laufen über `/api/cron/push` (Vercel Cron, abgesichert mit `CRON_SECRET`) und über einen
-  Knopf im Büro-Dashboard.
