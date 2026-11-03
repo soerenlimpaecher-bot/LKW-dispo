@@ -1,19 +1,21 @@
-// Legt die lokale Test-Datenbank neu an und spielt Supabase-Nachbildung + Migrationen ein.
-// Nur für Tests. Niemals gegen eine produktive Datenbank ausführen.
+// Legt eine lokale Test- oder Entwicklungsdatenbank neu an und spielt Supabase-Nachbildung
+// und Migrationen ein. Nur lokal. Niemals gegen eine produktive Datenbank ausführen.
+// Aufruf: node scripts/reset-test-db.mjs [verbindungs-url]   (Datenbankname muss auf _test oder _dev enden)
 import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 
-const url = new URL(process.env.TEST_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/essen_test");
+const url = new URL(process.argv[2] ?? process.env.TEST_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/essen_test");
 const dbName = url.pathname.slice(1);
-if (!/_test$/.test(dbName)) throw new Error(`Abbruch: '${dbName}' endet nicht auf _test.`);
+if (!/_(test|dev)$/.test(dbName)) throw new Error(`Abbruch: '${dbName}' endet nicht auf _test oder _dev.`);
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const admin = new pg.Client({ connectionString: Object.assign(new URL(url), { pathname: "/postgres" }).toString() });
 await admin.connect();
 await admin.query(`drop database if exists ${dbName} with (force)`);
 await admin.query(`create database ${dbName}`);
-await admin.query(`alter database ${dbName} set app.testmode = 'on'`);
+// Feste Testuhr nur in Test-Datenbanken
+if (dbName.endsWith("_test")) await admin.query(`alter database ${dbName} set app.testmode = 'on'`);
 await admin.end();
 
 const db = new pg.Client({ connectionString: url.toString() });

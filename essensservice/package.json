@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:test:reset": "node scripts/reset-test-db.mjs"
+    "db:test:reset": "node scripts/reset-test-db.mjs",
+    "db:dev:reset": "node scripts/reset-test-db.mjs postgres://postgres:postgres@localhost:5432/essen_dev && node scripts/seed-dev.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",
