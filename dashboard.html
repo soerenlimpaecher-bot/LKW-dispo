@@ -63,6 +63,29 @@ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px;font-var
 th,td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
 th{color:var(--text2);font-weight:600}
+nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+nav button,.gruppen button{font:inherit;padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--text2);cursor:pointer}
+nav button[aria-pressed=true],.gruppen button[aria-pressed=true]{background:var(--text);color:var(--surface);border-color:var(--text);font-weight:600}
+.gruppen{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.gruppen button{padding:5px 12px;font-size:13px}
+.fazit{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:12px}
+.fazit div{border-left:3px solid var(--line);padding-left:10px}
+.auf{border-top:1px solid var(--grid)}
+.auf summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,26%) 84px;gap:10px;align-items:center;padding:9px 0;color:var(--text);font-size:14px;list-style:none}
+.auf summary::-webkit-details-marker{display:none}
+.auf .name{min-width:0}
+.auf .name b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auf small{display:block;color:var(--text2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auf .zahl{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.auf .zahl small{font-weight:400}
+.dv{position:relative;height:14px}
+.dv::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1px solid var(--muted)}
+.dv i{position:absolute;top:0;height:14px;min-width:2px}
+.dv i.plus{left:calc(50% + 1px);background:var(--erloes);border-radius:0 4px 4px 0}
+.dv i.minus{right:calc(50% + 1px);background:var(--kosten);border-radius:4px 0 0 4px}
+.aufdetail{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:4px 14px;padding:2px 0 12px;font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums}
+.aufdetail b{color:var(--text)}
+.laeuft{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:5px;vertical-align:1px}
 </style>
 </head>
 <body>
@@ -73,6 +96,37 @@ th{color:var(--text2);font-weight:600}
   <span class="badge" id="badge">Beispielzahlen – noch keine echten Daten</span>
 </header>
 
+<nav id="nav">
+  <button data-v="heute">Heute (live)</button>
+  <button data-v="gestern">Gestern</button>
+  <button data-v="monat">Monat &amp; Jahr</button>
+</nav>
+
+<div id="v-tag">
+  <section class="grid" id="tagkpis"></section>
+  <section class="card block">
+    <h2>Wo wird Geld verdient – und wo nicht?</h2>
+    <div class="fazit" id="tagfazit"></div>
+    <div class="gruppen" id="gruppen">
+      <button data-g="auftrag">nach Auftrag</button>
+      <button data-g="leistung">nach Leistung</button>
+      <button data-g="kunde">nach Kunde</button>
+      <button data-g="maschine">nach Maschine</button>
+    </div>
+    <div class="legende">
+      <span><i style="background:var(--erloes)"></i>verdient (nach Lohn, Diesel, Maschine)</span>
+      <span><i style="background:var(--kosten)"></i>Verlust</span>
+    </div>
+    <div id="tagliste"></div>
+    <p class="hinweis">Zeile antippen zeigt Erlös und Kosten im Einzelnen. Die Fixkosten der Firma sind hier nicht eingerechnet, sie stehen oben im Tagesergebnis.</p>
+  </section>
+  <section class="card block">
+    <h2 id="tagkostentitel">Kosten des Tages</h2>
+    <div id="tagkosten"></div>
+  </section>
+</div>
+
+<div id="v-monat">
 <section class="grid" id="kpis"></section>
 
 <section class="card block">
@@ -120,6 +174,7 @@ th{color:var(--text2);font-weight:600}
     <div class="tabelle" id="tabelle"></div>
   </details>
 </section>
+</div>
 </main>
 
 <script>
@@ -140,6 +195,30 @@ const DATA = {
     fakturiert: 96000,          // Ausgangsrechnungen
     nichtAbgerechnet: 41000,    // geleistet, noch keine Rechnung
     kosten: { "Diesel": 27500, "Lohn": 34000, "Eingangsrechnungen": 16500 }
+  },
+  // Aufträge je Tag: Erlös und direkte Kosten (Lohn, Diesel, Maschine) in Euro
+  tage: {
+    heute: { datum: "2026-11-11", uhrzeit: "14:35", auftraege: [
+      { nr: "A-4711", kunde: "Kunde A", leistung: "Mais häckseln",      maschine: "Häcksler 1",   status: "läuft",  menge: "38 ha",   erloes: 9100, lohn: 620, diesel: 1450, masch: 2900 },
+      { nr: "A-4712", kunde: "Kunde A", leistung: "Abfahren Mais",      maschine: "LKW 04",       status: "läuft",  menge: "410 t",   erloes: 1640, lohn: 330, diesel: 410,  masch: 520 },
+      { nr: "A-4713", kunde: "Kunde A", leistung: "Abfahren Mais",      maschine: "LKW 07",       status: "läuft",  menge: "290 t",   erloes: 1160, lohn: 330, diesel: 395,  masch: 520 },
+      { nr: "A-4698", kunde: "Kunde B", leistung: "Gülle ausbringen",   maschine: "Schlepper 12", status: "fertig", menge: "620 m³",  erloes: 2480, lohn: 290, diesel: 540,  masch: 880 },
+      { nr: "A-4702", kunde: "Kunde C", leistung: "Gärrest Transport",  maschine: "LKW 02",       status: "läuft",  menge: "180 m³",  erloes: 720,  lohn: 310, diesel: 380,  masch: 490 },
+      { nr: "A-4705", kunde: "Kunde D", leistung: "Pflügen",            maschine: "Schlepper 09", status: "läuft",  menge: "14 ha",   erloes: 1260, lohn: 280, diesel: 430,  masch: 610 },
+      { nr: "A-4709", kunde: "Kunde E", leistung: "Getreide Transport", maschine: "LKW 11",       status: "fertig", menge: "52 t",    erloes: 468,  lohn: 240, diesel: 210,  masch: 330 },
+      { nr: "A-4710", kunde: "Kunde B", leistung: "Silo walzen",        maschine: "Radlader 2",   status: "läuft",  menge: "6,5 Std", erloes: 780,  lohn: 215, diesel: 160,  masch: 260 }
+    ]},
+    gestern: { datum: "2026-11-10", auftraege: [
+      { nr: "A-4690", kunde: "Kunde A", leistung: "Mais häckseln",      maschine: "Häcksler 1",   status: "fertig", menge: "61 ha",   erloes: 14600, lohn: 980, diesel: 2350, masch: 4650 },
+      { nr: "A-4691", kunde: "Kunde A", leistung: "Abfahren Mais",      maschine: "LKW 04",       status: "fertig", menge: "690 t",   erloes: 2760,  lohn: 520, diesel: 680,  masch: 830 },
+      { nr: "A-4692", kunde: "Kunde A", leistung: "Abfahren Mais",      maschine: "LKW 07",       status: "fertig", menge: "640 t",   erloes: 2560,  lohn: 520, diesel: 665,  masch: 830 },
+      { nr: "A-4693", kunde: "Kunde A", leistung: "Abfahren Mais",      maschine: "LKW 09",       status: "fertig", menge: "310 t",   erloes: 1240,  lohn: 520, diesel: 540,  masch: 830 },
+      { nr: "A-4688", kunde: "Kunde B", leistung: "Gülle ausbringen",   maschine: "Schlepper 12", status: "fertig", menge: "980 m³",  erloes: 3920,  lohn: 460, diesel: 850,  masch: 1390 },
+      { nr: "A-4689", kunde: "Kunde C", leistung: "Gärrest Transport",  maschine: "LKW 02",       status: "fertig", menge: "420 m³",  erloes: 1680,  lohn: 500, diesel: 610,  masch: 790 },
+      { nr: "A-4694", kunde: "Kunde F", leistung: "Erdtransport",       maschine: "LKW 06",       status: "fertig", menge: "9 Std",   erloes: 765,   lohn: 300, diesel: 290,  masch: 470 },
+      { nr: "A-4695", kunde: "Kunde D", leistung: "Pflügen",            maschine: "Schlepper 09", status: "fertig", menge: "22 ha",   erloes: 1980,  lohn: 440, diesel: 680,  masch: 960 },
+      { nr: "A-4696", kunde: "Kunde B", leistung: "Silo walzen",        maschine: "Radlader 2",   status: "fertig", menge: "10 Std",  erloes: 1200,  lohn: 330, diesel: 245,  masch: 400 }
+    ]}
   },
   // abgeschlossene Monate des Jahres (Jan … Vormonat)
   erloese:        [95000,110000,180000,240000,260000,310000,420000,460000,380000,330000],
@@ -220,12 +299,81 @@ function ampel(wert, text) {
   return `<span class="status" style="color:var(${gut ? "--good" : "--crit"})">${gut ? "▲" : "▼"}</span> ${text}`;
 }
 
+let ansicht = "heute", gruppe = "auftrag";
+const vz = n => (n > 0 ? "+" : "") + eur(n);
+
+function zeichneTag(r) {
+  const t = DATA.tage[ansicht];
+  const d = new Date(t.datum + "T12:00:00");
+  $("stand").textContent = (ansicht === "heute" ? "Heute, " : "Gestern, ") +
+    d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) +
+    (t.uhrzeit ? " · Stand " + t.uhrzeit + " Uhr" : " · abgeschlossen");
+  const A = t.auftraege.map(a => ({ ...a, kosten: a.lohn + a.diesel + a.masch, db: a.erloes - a.lohn - a.diesel - a.masch }));
+  const sum = f => A.reduce((x, a) => x + f(a), 0);
+  const erloes = sum(a => a.erloes), kosten = sum(a => a.kosten), db = erloes - kosten;
+  const fixTag = r.fix / r.atGesamt, ergebnis = db - fixTag;
+  const laufend = A.filter(a => a.status === "läuft").length;
+
+  $("tagkpis").innerHTML = [
+    ["Erlöse", eur(erloes), `${A.length} Aufträge` + (laufend ? ` · ${laufend} laufen noch` : "")],
+    ["Direkte Kosten", eur(kosten), "Lohn, Diesel, Maschinen"],
+    ["Verdient vor Fixkosten", eur(db), erloes > 0 ? pct(db / erloes * 100) + " vom Erlös" : ""],
+    ["Tagesergebnis", eur(ergebnis), ampel(ergebnis, `nach ${eur(fixTag)} Fixkosten je Arbeitstag`)]
+  ].map(k => `<div class="card kpi"><div class="label">${k[0]}</div><div class="wert">${k[1]}</div><div class="sub">${k[2]}</div></div>`).join("");
+
+  /* Gruppieren */
+  const feld = { auftrag: a => a.nr, leistung: a => a.leistung, kunde: a => a.kunde, maschine: a => a.maschine }[gruppe];
+  const map = new Map();
+  A.forEach(a => {
+    const k = feld(a);
+    if (!map.has(k)) map.set(k, { titel: k, n: 0, erloes: 0, lohn: 0, diesel: 0, masch: 0, db: 0, laeuft: false, erster: a });
+    const g = map.get(k);
+    g.n++; g.erloes += a.erloes; g.lohn += a.lohn; g.diesel += a.diesel; g.masch += a.masch; g.db += a.db;
+    if (a.status === "läuft") g.laeuft = true;
+  });
+  const G = [...map.values()].sort((a, b) => b.db - a.db);
+  const maxAbs = Math.max(...G.map(g => Math.abs(g.db)), 1);
+
+  const plus = G.filter(g => g.db >= 0), minus = G.filter(g => g.db < 0);
+  const name = g => gruppe === "auftrag" ? `${g.erster.leistung} (${g.erster.kunde})` : g.titel;
+  $("tagfazit").innerHTML =
+    `<div><b>Am meisten verdient</b><br>${plus.length ? `${name(plus[0])}: <b>${vz(plus[0].db)}</b>` : "nichts im Plus"}</div>` +
+    `<div><b>${minus.length ? minus.length + " im Minus" : "Nichts im Minus"}</b><br>` +
+    (minus.length ? `zusammen <b>${eur(minus.reduce((x, g) => x + g.db, 0))}</b>, am schlechtesten: ${name(minus[minus.length - 1])}` : "Alle Zeilen decken ihre direkten Kosten.") + `</div>`;
+
+  $("tagliste").innerHTML = G.map(g => {
+    const a = g.erster;
+    const titel = gruppe === "auftrag" ? `${a.leistung} · ${a.kunde}` : g.titel;
+    const unter = gruppe === "auftrag" ? `${a.nr} · ${a.maschine} · ${a.menge} · ${a.status}` : `${g.n} ${g.n === 1 ? "Auftrag" : "Aufträge"}` + (g.laeuft ? " · läuft" : "");
+    const w = Math.abs(g.db) / maxAbs * 50;
+    return `<details class="auf"><summary>
+      <span class="name"><b>${g.laeuft ? '<span class="laeuft" title="läuft"></span>' : ""}${titel}</b><small>${unter}</small></span>
+      <span class="dv"><i class="${g.db >= 0 ? "plus" : "minus"}" style="width:calc(${w}% - 1px)"></i></span>
+      <span class="zahl">${vz(g.db)}<small>${g.erloes > 0 ? pct(g.db / g.erloes * 100) : ""}</small></span>
+    </summary><div class="aufdetail">
+      <span>Erlös <b>${eur(g.erloes)}</b></span><span>Lohn <b>${eur(g.lohn)}</b></span>
+      <span>Diesel <b>${eur(g.diesel)}</b></span><span>Maschine <b>${eur(g.masch)}</b></span>
+    </div></details>`;
+  }).join("");
+
+  $("tagkostentitel").textContent = ansicht === "heute" ? "Kosten heute (bisher)" : "Kosten gestern";
+  const bloecke = [["Lohn", sum(a => a.lohn)], ["Diesel", sum(a => a.diesel)], ["Maschinen", sum(a => a.masch)], ["Fixkosten je Tag", fixTag]];
+  const maxK = Math.max(...bloecke.map(b => b[1]), 1);
+  $("tagkosten").innerHTML = bloecke.map(b =>
+    `<div class="zeile"><span>${b[0]}</span><div class="bahn"><div class="balken" style="width:${b[1] / maxK * 100}%"></div></div><span class="zahl">${eur(b[1])}</span></div>`).join("");
+}
+
 function zeichne() {
   const r = rechne();
+  $("badge").style.display = DATA.beispiel ? "" : "none";
+  document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === ansicht));
+  document.querySelectorAll("#gruppen button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === gruppe));
+  $("v-tag").style.display = ansicht === "monat" ? "none" : "";
+  $("v-monat").style.display = ansicht === "monat" ? "" : "none";
+  if (ansicht !== "monat") { zeichneTag(r); return; }
   const d = new Date(DATA.stand + "T12:00:00");
   $("stand").textContent = d.toLocaleDateString("de-DE", { month: "long", year: "numeric" }) +
     " · Stand " + d.toLocaleDateString("de-DE") + " · Arbeitstag " + r.atVorbei + " von " + r.atGesamt;
-  $("badge").style.display = DATA.beispiel ? "" : "none";
   $("jahrtitel").textContent = r.jahr;
 
   /* Kennzahlen */
@@ -374,6 +522,8 @@ function zeichneJahr(r) {
     zeichne();
   });
 });
+$("nav").addEventListener("click", e => { const v = e.target.dataset.v; if (v) { ansicht = v; zeichne(); } });
+$("gruppen").addEventListener("click", e => { const g = e.target.dataset.g; if (g) { gruppe = g; zeichne(); } });
 let warte;
 window.addEventListener("resize", () => { clearTimeout(warte); warte = setTimeout(zeichne, 120); });
 zeichne();
