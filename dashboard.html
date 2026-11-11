@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firmenüberblick</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f3f1; --surface:#fcfcfb; --line:#dddcd6; --grid:#e8e7e2;
+  --text:#0b0b0b; --text2:#52514e; --muted:#7a7972;
+  --erloes:#2a78d6; --erloes-hell:#9ec5f4; --kosten:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --bg:#111110; --surface:#1a1a19; --line:#34342f; --grid:#2a2a27;
+    --text:#f0efec; --text2:#c3c2b7; --muted:#8f8e85;
+    --erloes:#3987e5; --erloes-hell:#184f95; --kosten:#d95926;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:14px}
+h1{font-size:22px;margin:0}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.stand{color:var(--text2)}
+.badge{font-size:12px;border:1px solid var(--warn);border-radius:99px;padding:2px 10px;color:var(--text2)}
+.badge::before{content:"⚠ "}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.kpi .label{color:var(--text2);font-size:13px}
+.kpi .wert{font-size:27px;font-weight:650;font-variant-numeric:tabular-nums;margin:2px 0}
+.kpi .sub{color:var(--text2);font-size:13px}
+.status{font-weight:600}
+.block{margin-bottom:12px}
+.ziel-text{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:12px}
+.ziel-text div{border-left:3px solid var(--line);padding-left:10px}
+.ziel-text b{font-variant-numeric:tabular-nums}
+.regler{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.regler label{display:block;font-size:13px;color:var(--text2)}
+.regler input{width:100%;margin-top:4px;padding:9px;font:inherit;font-variant-numeric:tabular-nums;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.hinweis{color:var(--text2);font-size:13px;margin:10px 0 0}
+.zeile{display:grid;grid-template-columns:150px 1fr 88px;gap:10px;align-items:center;margin:7px 0;font-size:14px}
+.zeile .bahn{height:14px}
+.zeile .balken{height:14px;background:var(--kosten);border-radius:0 4px 4px 0;min-width:2px}
+.zeile .zahl{text-align:right;font-variant-numeric:tabular-nums}
+.legende{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--text2);margin-bottom:6px}
+.legende i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legende i.strich{height:0;border-top:2px dashed var(--text2);border-radius:0;vertical-align:3px}
+svg{display:block;width:100%;overflow:visible}
+svg text{fill:var(--text2);font-size:11px;font-variant-numeric:tabular-nums}
+#chartwrap,#zielwrap{position:relative}
+#tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.18);display:none;white-space:nowrap;z-index:2}
+#tip b{display:block;margin-bottom:2px}
+#tip span{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--text2);font-size:13px}
+.tabelle{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text2);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Firmenüberblick</h1>
+  <span class="stand" id="stand"></span>
+  <span class="badge" id="badge">Beispielzahlen – noch keine echten Daten</span>
+</header>
+
+<section class="grid" id="kpis"></section>
+
+<section class="card block">
+  <h2>Wie viel Umsatz brauchen wir diesen Monat?</h2>
+  <div class="legende">
+    <span><i style="background:var(--erloes)"></i>fakturiert</span>
+    <span><i style="background:var(--erloes-hell)"></i>geleistet, noch nicht abgerechnet</span>
+    <span><i class="strich"></i>Prognose Monatsende</span>
+  </div>
+  <div id="zielwrap"></div>
+  <div class="ziel-text" id="zieltext"></div>
+</section>
+
+<section class="card block">
+  <h2>Stellschrauben</h2>
+  <div class="regler">
+    <label>Fixkosten pro Monat (€)<input id="inFix" type="number" inputmode="numeric" min="0" step="500"></label>
+    <label>Variable Kosten in % vom Umsatz<input id="inVar" type="number" inputmode="decimal" min="0" max="99" step="0.5"></label>
+    <label>Wunschgewinn in % vom Umsatz<input id="inZiel" type="number" inputmode="decimal" min="0" max="60" step="0.5"></label>
+  </div>
+  <p class="hinweis" id="reglerhinweis"></p>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Kosten diesen Monat (bisher)</h2>
+    <div id="kosten"></div>
+  </div>
+  <div class="card">
+    <h2>Jahr <span id="jahrtitel"></span></h2>
+    <div id="jahrkpi"></div>
+  </div>
+</section>
+
+<section class="card block">
+  <h2>Jahresverlauf: Erlöse und Kosten je Monat (in T€)</h2>
+  <div class="legende">
+    <span><i style="background:var(--erloes)"></i>Erlöse</span>
+    <span><i style="background:var(--kosten)"></i>Kosten (variabel + fix)</span>
+    <span><i style="background:var(--erloes);opacity:.4"></i>heller = Prognose</span>
+  </div>
+  <div id="chartwrap"><div id="tip"></div></div>
+  <details>
+    <summary>Als Tabelle anzeigen</summary>
+    <div class="tabelle" id="tabelle"></div>
+  </details>
+</section>
+</main>
+
+<script>
+/* ------------------------------------------------------------------
+   DATEN. Im Moment Beispielzahlen. Später liefert n8n genau dieses
+   Objekt (täglicher Abruf aus Agrarmonitor); der Rest der Seite
+   bleibt unverändert.
+------------------------------------------------------------------- */
+const DATA = {
+  beispiel: true,
+  stand: "2026-11-11",
+  // Vorgaben aus der BWA (auf der Seite änderbar)
+  fixkostenMonat: 85000,
+  variableQuote: 58,      // variable Kosten in % vom Umsatz
+  zielGewinn: 10,         // Wunschgewinn in % vom Umsatz
+  // laufender Monat
+  monat: {
+    fakturiert: 96000,          // Ausgangsrechnungen
+    nichtAbgerechnet: 41000,    // geleistet, noch keine Rechnung
+    kosten: { "Diesel": 27500, "Lohn": 34000, "Eingangsrechnungen": 16500 }
+  },
+  // abgeschlossene Monate des Jahres (Jan … Vormonat)
+  erloese:        [95000,110000,180000,240000,260000,310000,420000,460000,380000,330000],
+  variableKosten: [61000, 68000,106000,137000,149000,176000,236000,262000,220000,195000],
+  // Vorjahr, alle 12 Monate (für die Saisonkurve der Prognose)
+  vorjahrErloese: [90000,100000,170000,225000,250000,300000,395000,440000,360000,300000,210000,120000]
+};
+
+const MONATE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const eur = n => new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(Math.round(n));
+const kEur = n => new Intl.NumberFormat("de-DE",{maximumFractionDigits:0}).format(n/1000) + " T€";
+const pct = n => new Intl.NumberFormat("de-DE",{maximumFractionDigits:1}).format(n) + " %";
+const $ = id => document.getElementById(id);
+
+/* Einstellungen: Vorgabe aus DATA, eigene Werte bleiben im Browser gespeichert */
+const SPEICHER = "firmenueberblick-einstellungen";
+let einst = { fix: DATA.fixkostenMonat, vari: DATA.variableQuote, ziel: DATA.zielGewinn };
+try { Object.assign(einst, JSON.parse(localStorage.getItem(SPEICHER) || "{}")); } catch (e) {}
+
+/* Arbeitstage Montag–Freitag (Feiertage nicht berücksichtigt) */
+function arbeitstage(jahr, monat, bisTag) {
+  const letzter = new Date(jahr, monat + 1, 0).getDate();
+  let n = 0;
+  for (let t = 1; t <= Math.min(bisTag, letzter); t++) {
+    const w = new Date(jahr, monat, t).getDay();
+    if (w !== 0 && w !== 6) n++;
+  }
+  return n;
+}
+
+function rechne() {
+  const d = new Date(DATA.stand + "T12:00:00");
+  const jahr = d.getFullYear(), m = d.getMonth(), tag = d.getDate();
+  const atGesamt = arbeitstage(jahr, m, 31);
+  const atVorbei = Math.max(1, arbeitstage(jahr, m, tag));
+  const atRest = atGesamt - atVorbei;
+
+  const fix = Math.max(0, +einst.fix || 0);
+  const dbq = 1 - Math.min(99, Math.max(0, +einst.vari || 0)) / 100;   // Deckungsbeitragsquote
+  const zielQ = Math.max(0, +einst.ziel || 0) / 100;
+
+  const leistung = DATA.monat.fakturiert + DATA.monat.nichtAbgerechnet;
+  const varKostenIst = Object.values(DATA.monat.kosten).reduce((a, b) => a + b, 0);
+  const fixAnteil = fix * atVorbei / atGesamt;
+  const ergebnisIst = leistung - varKostenIst - fixAnteil;
+
+  const nullUmsatz = fix / dbq;
+  const zielUmsatz = dbq > zielQ ? fix / (dbq - zielQ) : null;   // null = nicht erreichbar
+  const prognose = leistung / atVorbei * atGesamt;
+  const prognoseErgebnis = prognose * dbq - fix;
+
+  /* Jahr: abgeschlossene Monate + Prognose laufender Monat
+     + restliche Monate nach Vorjahreskurve, skaliert mit dem bisherigen Trend */
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const istAbgeschl = sum(DATA.erloese);
+  const vjGleich = sum(DATA.vorjahrErloese.slice(0, DATA.erloese.length));
+  const trend = vjGleich > 0 ? istAbgeschl / vjGleich : 1;
+  const reihe = [];
+  for (let i = 0; i < 12; i++) {
+    let erloes, kosten, art;
+    if (i < DATA.erloese.length) { erloes = DATA.erloese[i]; kosten = DATA.variableKosten[i] + fix; art = "Ist"; }
+    else if (i === m) { erloes = prognose; kosten = prognose * (1 - dbq) + fix; art = "Prognose"; }
+    else { erloes = DATA.vorjahrErloese[i] * trend; kosten = erloes * (1 - dbq) + fix; art = "Prognose"; }
+    reihe.push({ monat: MONATE[i], erloes, kosten, ergebnis: erloes - kosten, vorjahr: DATA.vorjahrErloese[i], art });
+  }
+  const jahrUmsatz = sum(reihe.map(r => r.erloes));
+  const jahrErgebnis = sum(reihe.map(r => r.ergebnis));
+  const jahrNull = fix * 12 / dbq;
+  const bisher = istAbgeschl + leistung;
+
+  return { jahr, m, tag, atGesamt, atVorbei, atRest, fix, dbq, zielQ, leistung, varKostenIst, fixAnteil,
+           ergebnisIst, nullUmsatz, zielUmsatz, prognose, prognoseErgebnis, reihe, jahrUmsatz,
+           jahrErgebnis, jahrNull, bisher, trend };
+}
+
+function ampel(wert, text) {
+  const gut = wert >= 0;
+  return `<span class="status" style="color:var(${gut ? "--good" : "--crit"})">${gut ? "▲" : "▼"}</span> ${text}`;
+}
+
+function zeichne() {
+  const r = rechne();
+  const d = new Date(DATA.stand + "T12:00:00");
+  $("stand").textContent = d.toLocaleDateString("de-DE", { month: "long", year: "numeric" }) +
+    " · Stand " + d.toLocaleDateString("de-DE") + " · Arbeitstag " + r.atVorbei + " von " + r.atGesamt;
+  $("badge").style.display = DATA.beispiel ? "" : "none";
+  $("jahrtitel").textContent = r.jahr;
+
+  /* Kennzahlen */
+  const rendite = r.prognose > 0 ? r.prognoseErgebnis / r.prognose * 100 : 0;
+  $("kpis").innerHTML = [
+    ["Umsatz bisher", eur(r.leistung), `${eur(DATA.monat.fakturiert)} fakturiert · ${eur(DATA.monat.nichtAbgerechnet)} noch offen`],
+    ["Kosten bisher", eur(r.varKostenIst + r.fixAnteil), `${eur(r.varKostenIst)} variabel · ${eur(r.fixAnteil)} Fixkosten anteilig`],
+    ["Ergebnis bisher", eur(r.ergebnisIst), ampel(r.ergebnisIst, r.ergebnisIst >= 0 ? "im Plus" : "im Minus")],
+    ["Prognose Monatsende", eur(r.prognose), ampel(r.prognoseErgebnis, `Ergebnis ${eur(r.prognoseErgebnis)} · ${pct(rendite)} Gewinn`)]
+  ].map(k => `<div class="card kpi"><div class="label">${k[0]}</div><div class="wert">${k[1]}</div><div class="sub">${k[2]}</div></div>`).join("");
+
+  zeichneZiel(r);
+
+  /* Zieltexte */
+  const jeTag = (fehlt) => r.atRest > 0 ? ` – das sind <b>${eur(fehlt / r.atRest)}</b> je Arbeitstag (${r.atRest} übrig)` : "";
+  const fehltNull = r.nullUmsatz - r.leistung;
+  let t = `<div><b>Schwarze Null bei ${eur(r.nullUmsatz)}</b><br>` +
+    (fehltNull > 0 ? `Es fehlen noch <b>${eur(fehltNull)}</b>${jeTag(fehltNull)}.` : `Erreicht – ${eur(-fehltNull)} darüber.`) + `</div>`;
+  if (r.zielUmsatz === null) {
+    t += `<div><b>${pct(r.zielQ * 100)} Gewinn nicht erreichbar</b><br>Nach variablen Kosten bleiben nur ${pct(r.dbq * 100)} vom Umsatz übrig.</div>`;
+  } else {
+    const fehltZiel = r.zielUmsatz - r.leistung;
+    t += `<div><b>${pct(r.zielQ * 100)} Gewinn bei ${eur(r.zielUmsatz)}</b><br>` +
+      (fehltZiel > 0 ? `Es fehlen noch <b>${eur(fehltZiel)}</b>${jeTag(fehltZiel)}.` : `Erreicht – ${eur(-fehltZiel)} darüber.`) + `</div>`;
+  }
+  t += `<div><b>Prognose ${eur(r.prognose)}</b><br>Bei gleichem Tempo: Ergebnis <b>${eur(r.prognoseErgebnis)}</b>, das sind ${pct(rendite)} vom Umsatz.</div>`;
+  $("zieltext").innerHTML = t;
+
+  $("reglerhinweis").textContent = `Von jedem Euro Umsatz bleiben ${pct(r.dbq * 100)} zur Deckung der Fixkosten. ` +
+    `Rechnung: nötiger Umsatz = Fixkosten ÷ (${pct(r.dbq * 100)} − Wunschgewinn).`;
+
+  /* Kostenblöcke */
+  const bloecke = Object.entries(DATA.monat.kosten).concat([["Fixkosten anteilig", r.fixAnteil]]);
+  const maxK = Math.max(...bloecke.map(b => b[1]), 1);
+  $("kosten").innerHTML = bloecke.map(b =>
+    `<div class="zeile"><span>${b[0]}</span><div class="bahn"><div class="balken" style="width:${b[1] / maxK * 100}%"></div></div><span class="zahl">${eur(b[1])}</span></div>`).join("");
+
+  /* Jahr */
+  const jRendite = r.jahrUmsatz > 0 ? r.jahrErgebnis / r.jahrUmsatz * 100 : 0;
+  $("jahrkpi").innerHTML = [
+    ["Umsatz bis heute", eur(r.bisher)],
+    ["Prognose Jahresumsatz", eur(r.jahrUmsatz)],
+    ["Schwarze Null im Jahr bei", eur(r.jahrNull)],
+    ["Prognose Jahresergebnis", `${eur(r.jahrErgebnis)} (${pct(jRendite)})`],
+    ["Trend zum Vorjahr", (r.trend >= 1 ? "+" : "") + pct((r.trend - 1) * 100)]
+  ].map(z => `<div class="zeile" style="grid-template-columns:1fr auto"><span>${z[0]}</span><span class="zahl"><b>${z[1]}</b></span></div>`).join("");
+
+  zeichneJahr(r);
+
+  $("tabelle").innerHTML = `<table><tr><th>Monat</th><th>Erlöse</th><th>Kosten</th><th>Ergebnis</th><th>Vorjahr Erlöse</th><th></th></tr>` +
+    r.reihe.map(x => `<tr><td>${x.monat}</td><td>${eur(x.erloes)}</td><td>${eur(x.kosten)}</td><td>${eur(x.ergebnis)}</td><td>${eur(x.vorjahr)}</td><td>${x.art}</td></tr>`).join("") +
+    `<tr><th>Jahr</th><th>${eur(r.jahrUmsatz)}</th><th>${eur(r.jahrUmsatz - r.jahrErgebnis)}</th><th>${eur(r.jahrErgebnis)}</th><th>${eur(DATA.vorjahrErloese.reduce((a, b) => a + b, 0))}</th><th></th></tr></table>`;
+}
+
+/* Zielbalken: Umsatz bisher gegen Null-Punkt, Wunschgewinn und Prognose */
+function zeichneZiel(r) {
+  const wrap = $("zielwrap");
+  const W = Math.max(280, wrap.clientWidth), H = 96, l = 4, rgt = 4, y = 40, h = 22;
+  const max = Math.max(r.nullUmsatz, r.zielUmsatz || 0, r.prognose, r.leistung) * 1.08;
+  const x = v => l + v / max * (W - l - rgt);
+  const marken = [{ v: r.nullUmsatz, t: "Null " + kEur(r.nullUmsatz), oben: true }];
+  if (r.zielUmsatz !== null) marken.push({ v: r.zielUmsatz, t: pct(r.zielQ * 100) + " Gewinn " + kEur(r.zielUmsatz), oben: true });
+  // Beschriftungen oben nicht überlappen lassen
+  marken.sort((a, b) => a.v - b.v);
+  let s = `<svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Umsatz bisher gegen Monatsziele">`;
+  s += `<rect x="${l}" y="${y}" width="${W - l - rgt}" height="${h}" rx="4" fill="var(--grid)"/>`;
+  const xf = x(DATA.monat.fakturiert), xl = x(r.leistung);
+  s += `<rect x="${l}" y="${y}" width="${Math.max(0, xf - l - 1)}" height="${h}" fill="var(--erloes)"/>`;
+  s += `<path d="M${xf + 1},${y} H${xl - 4} a4,4 0 0 1 4,4 V${y + h - 4} a4,4 0 0 1 -4,4 H${xf + 1} Z" fill="var(--erloes-hell)"/>`;
+  let letzteRechts = -1e9;
+  marken.forEach((mk, i) => {
+    const xm = x(mk.v);
+    const breite = mk.t.length * 6.2;
+    let anker = "middle", tx = xm;
+    if (xm + breite / 2 > W) { anker = "end"; tx = W; }
+    if (xm - breite / 2 < 0) { anker = "start"; tx = 0; }
+    const links = anker === "middle" ? tx - breite / 2 : anker === "end" ? tx - breite : tx;
+    const zeile = links < letzteRechts + 6 ? 12 : 26;
+    letzteRechts = Math.max(letzteRechts, links + breite);
+    s += `<line x1="${xm}" x2="${xm}" y1="${zeile + 4}" y2="${y + h + 4}" stroke="var(--text)" stroke-width="2"/>`;
+    s += `<text x="${tx}" y="${zeile}" text-anchor="${anker}" style="fill:var(--text);font-weight:600">${mk.t}</text>`;
+  });
+  const xp = x(r.prognose);
+  const pt = "Prognose " + kEur(r.prognose), pb = pt.length * 6.2;
+  s += `<line x1="${xp}" x2="${xp}" y1="${y - 4}" y2="${y + h + 12}" stroke="var(--text2)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  s += `<text x="${Math.min(W - pb / 2, Math.max(pb / 2, xp))}" y="${y + h + 26}" text-anchor="middle">${pt}</text>`;
+  s += `</svg>`;
+  wrap.innerHTML = s;
+}
+
+/* Jahresverlauf: je Monat Erlöse und Kosten nebeneinander */
+function zeichneJahr(r) {
+  const wrap = $("chartwrap"), tip = $("tip");
+  const alt = wrap.querySelector("svg"); if (alt) alt.remove();
+  const W = Math.max(280, wrap.clientWidth), H = 250, l = 40, o = 10, u = 24;
+  const max = Math.max(...r.reihe.map(x => Math.max(x.erloes, x.kosten)));
+  const schritt = max > 400000 ? 100000 : max > 150000 ? 50000 : 25000;
+  const top = Math.ceil(max / schritt) * schritt;
+  const y = v => o + (1 - v / top) * (H - o - u);
+  const gw = (W - l) / 12, bw = Math.max(4, Math.min(18, gw * 0.36));
+  let s = `<svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Erlöse und Kosten je Monat">`;
+  for (let v = 0; v <= top; v += schritt) {
+    s += `<line x1="${l}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>`;
+    s += `<text x="${l - 6}" y="${y(v) + 4}" text-anchor="end">${v / 1000}</text>`;
+  }
+  
+  const balken = (x, v, farbe, op) => {
+    const yy = y(v), hh = y(0) - yy, rr = Math.min(4, hh);
+    return `<path d="M${x},${y(0)} V${yy + rr} a${rr},${rr} 0 0 1 ${rr},-${rr} H${x + bw - rr} a${rr},${rr} 0 0 1 ${rr},${rr} V${y(0)} Z" fill="var(${farbe})" opacity="${op}"/>`;
+  };
+  r.reihe.forEach((x, i) => {
+    const mitte = l + gw * i + gw / 2, op = x.art === "Ist" ? 1 : 0.4;
+    s += balken(mitte - bw - 1, x.erloes, "--erloes", op) + balken(mitte + 1, x.kosten, "--kosten", op);
+    s += `<text x="${mitte}" y="${H - 6}" text-anchor="middle">${gw < 34 ? x.monat[0] : x.monat}</text>`;
+    s += `<rect data-i="${i}" x="${l + gw * i}" y="${o}" width="${gw}" height="${H - o - u}" fill="transparent"/>`;
+  });
+  s += `</svg>`;
+  wrap.insertAdjacentHTML("beforeend", s);
+  const svg = wrap.querySelector("svg");
+  const zeige = e => {
+    const i = e.target.dataset && e.target.dataset.i;
+    if (i === undefined) { tip.style.display = "none"; return; }
+    const x = r.reihe[i];
+    tip.innerHTML = `<b>${x.monat} ${r.jahr} · ${x.art}</b>` +
+      `<span><span>Erlöse</span><span>${eur(x.erloes)}</span></span>` +
+      `<span><span>Kosten</span><span>${eur(x.kosten)}</span></span>` +
+      `<span><span>Ergebnis</span><span>${eur(x.ergebnis)}</span></span>` +
+      `<span><span>Vorjahr Erlöse</span><span>${eur(x.vorjahr)}</span></span>`;
+    tip.style.display = "block";
+    const b = wrap.getBoundingClientRect(), px = e.clientX - b.left;
+    tip.style.left = Math.max(0, Math.min(b.width - tip.offsetWidth, px + (px > b.width / 2 ? -tip.offsetWidth - 12 : 12))) + "px";
+    tip.style.top = "8px";
+  };
+  svg.addEventListener("pointermove", zeige);
+  svg.addEventListener("pointerdown", zeige);
+  svg.addEventListener("pointerleave", () => tip.style.display = "none");
+}
+
+/* Eingaben */
+[["inFix", "fix"], ["inVar", "vari"], ["inZiel", "ziel"]].forEach(([id, key]) => {
+  const el = $(id);
+  el.value = einst[key];
+  el.addEventListener("input", () => {
+    einst[key] = parseFloat(el.value) || 0;
+    try { localStorage.setItem(SPEICHER, JSON.stringify(einst)); } catch (e) {}
+    zeichne();
+  });
+});
+let warte;
+window.addEventListener("resize", () => { clearTimeout(warte); warte = setTimeout(zeichne, 120); });
+zeichne();
+</script>
+</body>
+</html>
